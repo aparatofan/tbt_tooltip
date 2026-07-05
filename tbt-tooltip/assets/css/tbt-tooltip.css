@@ -1,0 +1,59 @@
+/*
+ * TBT Tooltip — frontend styles.
+ *
+ * Core show/hide is pure CSS (:hover), so desktop tooltips keep working
+ * even if the JS file fails to load. The JS layer only adds .is-active
+ * (tap support for tablets) and sets --tbt-shift / --tbt-arrow-shift when
+ * a bubble would overflow the viewport edge.
+ */
+
+.tbt-tooltip-trigger {
+    position: relative;
+    cursor: pointer;
+}
+
+.tbt-tooltip-trigger-text {
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-color: red;
+}
+
+.tbt-tooltip-bubble {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 9px);
+    left: 50%;
+    transform: translateX(calc(-50% + var(--tbt-shift, 0px)));
+    width: max-content;
+    max-width: 280px;
+    padding: 10px 16px;
+    background: #0859C6;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    line-height: 1.45;
+    text-align: center;
+    text-decoration: none;
+    white-space: normal;
+    z-index: 999;
+}
+
+/* Downward-pointing triangle, kept centered over the trigger even when
+   the bubble itself has been shifted away from a viewport edge. */
+.tbt-tooltip-bubble::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: calc(50% - var(--tbt-shift, 0px));
+    transform: translateX(-50%);
+    border: 9px solid transparent;
+    border-top-color: #0859C6;
+    border-bottom: 0;
+}
+
+.tbt-tooltip-trigger:hover .tbt-tooltip-bubble,
+.tbt-tooltip-trigger.is-active .tbt-tooltip-bubble {
+    display: block;
+}
