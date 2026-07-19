@@ -21,7 +21,7 @@ jobs:
           protocol: ftps
           local-dir: ./tbt-tooltip/
           server-dir: /tbt-tooltip/
-          dry-run: true
+          dry-run: false
           exclude: |
             **/.git*
             **/.git*/**
