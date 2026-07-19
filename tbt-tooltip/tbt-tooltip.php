@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: TBT Tooltip
- * Description: Inline definition tooltips for The Blue Tree English lessons. Includes an admin generator (Tools → TBT Tooltip) that turns pasted lesson text into ready-to-use tooltip HTML for a Code block.
+ * Description: Inline definition tooltips for The Blue Tree English lessons. Includes an admin generator (TBT → TBT Tooltip) that turns pasted lesson text into ready-to-use tooltip HTML for a Code block.
  * Version: 1.0.0
  * Author: Mariusz Mirecki
  * Text Domain: tbt-tooltip
@@ -15,8 +15,28 @@ define( 'TBT_TOOLTIP_VERSION', '1.0.0' );
 define( 'TBT_TOOLTIP_URL', plugin_dir_url( __FILE__ ) );
 define( 'TBT_TOOLTIP_PATH', plugin_dir_path( __FILE__ ) );
 
-// Load the admin generator page (Tools → TBT Tooltip).
+// Load the admin generator page (TBT → TBT Tooltip).
 require_once TBT_TOOLTIP_PATH . 'admin/tbt-tooltip-admin.php';
+
+/**
+ * Register this plugin on the TBT Hub Overview page.
+ *
+ * Placed in the main plugin file (not the admin subfile) so it loads
+ * unconditionally.
+ *
+ * @param array $items Existing hub items.
+ * @return array
+ */
+function tbt_tooltip_register_hub_item( $items ) {
+	$items[] = array(
+		'slug'        => 'tbt-tooltip',
+		'title'       => 'TBT Tooltip',
+		'description' => 'Turn pasted lesson text into ready-to-paste inline definition-tooltip HTML.',
+		'capability'  => 'edit_posts',
+	);
+	return $items;
+}
+add_filter( 'tbt_hub_items', 'tbt_tooltip_register_hub_item' );
 
 /**
  * Enqueue the frontend tooltip CSS/JS on every public page.

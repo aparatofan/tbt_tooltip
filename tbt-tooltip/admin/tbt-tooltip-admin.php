@@ -1,6 +1,6 @@
 <?php
 /**
- * TBT Tooltip — admin generator page (Tools → TBT Tooltip).
+ * TBT Tooltip — admin generator page (TBT → TBT Tooltip).
  *
  * Workflow: paste lesson text → select fragments with the mouse → type a
  * tooltip for each selected fragment → generate the final HTML → copy it
@@ -13,16 +13,40 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Register the Tools → TBT Tooltip page.
+ * Hook suffix of our admin page, captured at registration so the enqueue
+ * callback can match it whether we live under the TBT hub or the fallback
+ * top-level menu.
+ *
+ * @var string
+ */
+$GLOBALS['tbt_tooltip_page_hook'] = '';
+
+/**
+ * Register the generator page: under the TBT hub when active, otherwise a
+ * top-level menu of its own so the tool is never unreachable.
  */
 function tbt_tooltip_register_admin_page() {
-    add_management_page(
-        __( 'TBT Tooltip Generator', 'tbt-tooltip' ),
-        __( 'TBT Tooltip', 'tbt-tooltip' ),
-        'edit_posts',
-        'tbt-tooltip',
-        'tbt_tooltip_render_admin_page'
-    );
+    if ( defined( 'TBT_HUB_SLUG' ) ) {
+        $hook = add_submenu_page(
+            TBT_HUB_SLUG,
+            __( 'TBT Tooltip Generator', 'tbt-tooltip' ),
+            __( 'TBT Tooltip', 'tbt-tooltip' ),
+            'edit_posts',
+            'tbt-tooltip',
+            'tbt_tooltip_render_admin_page'
+        );
+    } else {
+        $hook = add_menu_page(
+            __( 'TBT Tooltip Generator', 'tbt-tooltip' ),
+            __( 'TBT Tooltip', 'tbt-tooltip' ),
+            'edit_posts',
+            'tbt-tooltip',
+            'tbt_tooltip_render_admin_page',
+            'dashicons-editor-help',
+            3
+        );
+    }
+    $GLOBALS['tbt_tooltip_page_hook'] = $hook;
 }
 add_action( 'admin_menu', 'tbt_tooltip_register_admin_page' );
 
@@ -33,7 +57,7 @@ add_action( 'admin_menu', 'tbt_tooltip_register_admin_page' );
  * @param string $hook Current admin page hook suffix.
  */
 function tbt_tooltip_admin_enqueue_assets( $hook ) {
-    if ( 'tools_page_tbt-tooltip' !== $hook ) {
+    if ( empty( $GLOBALS['tbt_tooltip_page_hook'] ) || $hook !== $GLOBALS['tbt_tooltip_page_hook'] ) {
         return;
     }
 
