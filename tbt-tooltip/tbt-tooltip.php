@@ -18,6 +18,9 @@ define( 'TBT_TOOLTIP_PATH', plugin_dir_path( __FILE__ ) );
 // Load the admin generator page (TBT → TBT Tooltip).
 require_once TBT_TOOLTIP_PATH . 'admin/tbt-tooltip-admin.php';
 
+// Load the saved-tooltip post type + [tbt_tooltip id="…"] shortcode.
+require_once TBT_TOOLTIP_PATH . 'includes/tbt-tooltip-cpt.php';
+
 /**
  * Register this plugin on the TBT Hub Overview page.
  *
@@ -33,6 +36,13 @@ function tbt_tooltip_register_hub_item( $items ) {
 		'title'       => 'TBT Tooltip',
 		'description' => 'Turn pasted lesson text into ready-to-paste inline definition-tooltip HTML.',
 		'capability'  => 'edit_posts',
+	);
+	$items[] = array(
+		'slug'        => 'edit.php?post_type=tbt_tooltip',
+		'title'       => 'Tooltips',
+		'description' => 'Your saved tooltip documents. Embed one in a lesson with [tbt_tooltip id="…"].',
+		'capability'  => 'edit_posts',
+		'url'         => admin_url( 'edit.php?post_type=tbt_tooltip' ),
 	);
 	return $items;
 }
