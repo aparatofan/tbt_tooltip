@@ -88,6 +88,17 @@ function tbt_tooltip_admin_enqueue_assets( $hook ) {
         TBT_TOOLTIP_VERSION,
         true
     );
+
+    // Hand the save endpoint + nonce to the admin JS so it can POST the
+    // generated markup back and create a tbt_tooltip post.
+    wp_localize_script(
+        'tbt-tooltip-admin-js',
+        'tbtTooltipSave',
+        array(
+            'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+            'nonce'   => wp_create_nonce( 'tbt_tooltip_save' ),
+        )
+    );
 }
 add_action( 'admin_enqueue_scripts', 'tbt_tooltip_admin_enqueue_assets' );
 
@@ -140,7 +151,93 @@ function tbt_tooltip_render_admin_page() {
             <h3><?php esc_html_e( 'Live preview', 'tbt-tooltip' ); ?></h3>
             <p class="description"><?php esc_html_e( 'Hover (or click, like a tablet tap) the underlined words to test the tooltips.', 'tbt-tooltip' ); ?></p>
             <div id="tbt-tt-live" class="tbt-tt-live"></div>
+
+            <h3><?php esc_html_e( 'Save this tooltip', 'tbt-tooltip' ); ?></h3>
+            <p class="description">
+                <?php esc_html_e( 'Give it a name (e.g. tp_food_4) and save it as a reusable Tooltip. You will get a shortcode to paste into the lesson.', 'tbt-tooltip' ); ?>
+            </p>
+            <p>
+                <label for="tbt-tt-title" class="screen-reader-text"><?php esc_html_e( 'Tooltip name', 'tbt-tooltip' ); ?></label>
+                <input type="text" id="tbt-tt-title" class="regular-text"
+                       placeholder="<?php esc_attr_e( 'Tooltip name, e.g. tp_food_4', 'tbt-tooltip' ); ?>" disabled>
+                <button type="button" class="button button-primary" id="tbt-tt-save" disabled>
+                    <?php esc_html_e( 'Save as Tooltip', 'tbt-tooltip' ); ?>
+                </button>
+                <span id="tbt-tt-save-status" class="tbt-tt-copy-status" aria-live="polite"></span>
+            </p>
+            <div id="tbt-tt-save-result" style="display:none;">
+                <p>
+                    <label for="tbt-tt-shortcode"><strong><?php esc_html_e( 'Shortcode', 'tbt-tooltip' ); ?></strong></label><br>
+                    <input type="text" id="tbt-tt-shortcode" class="regular-text code" readonly>
+                    <button type="button" class="button" id="tbt-tt-shortcode-copy"><?php esc_html_e( 'Copy shortcode', 'tbt-tooltip' ); ?></button>
+                    <a href="#" id="tbt-tt-edit-link" class="button" target="_blank" rel="noopener"><?php esc_html_e( 'Edit tooltip', 'tbt-tooltip' ); ?></a>
+                </p>
+            </div>
         </div>
     </div>
     <?php
+}
+
+add_action( 'wp_ajax_tbt_tooltip_save', 'tbt_tooltip_ajax_save' );
+
+/**
+ * Save generator output as a tbt_tooltip post and return its shortcode.
+ *
+ * The client sends the exact markup already built in #tbt-tt-output; we do
+ * not re-serialize it. Safety comes from a targeted wp_kses allowlist that
+ * keeps only the tags/attributes the generator emits — so the trigger/bubble
+ * spans survive and nothing else does, regardless of the saver's
+ * unfiltered_html capability.
+ */
+function tbt_tooltip_ajax_save() {
+    check_ajax_referer( 'tbt_tooltip_save', 'nonce' );
+
+    if ( ! current_user_can( 'edit_posts' ) ) {
+        wp_send_json_error( array( 'message' => __( 'Permission denied.', 'tbt-tooltip' ) ), 403 );
+    }
+
+    $title = isset( $_POST['title'] ) ? sanitize_text_field( wp_unslash( $_POST['title'] ) ) : '';
+    $raw   = isset( $_POST['content'] ) ? wp_unslash( $_POST['content'] ) : '';
+
+    if ( '' === trim( $title ) ) {
+        wp_send_json_error( array( 'message' => __( 'Please enter a name for the tooltip.', 'tbt-tooltip' ) ), 400 );
+    }
+    if ( '' === trim( $raw ) ) {
+        wp_send_json_error( array( 'message' => __( 'Nothing to save. Generate the HTML first.', 'tbt-tooltip' ) ), 400 );
+    }
+
+    // Targeted allowlist: exactly the tags/attributes the generator emits.
+    // Guarantees the trigger/bubble spans survive AND nothing else gets through,
+    // regardless of the saver's unfiltered_html capability.
+    $allowed = array(
+        'p'    => array( 'class' => true ),
+        'span' => array( 'class' => true ),
+    );
+    $content = wp_kses( $raw, $allowed );
+
+    // post_status => 'publish' so the shortcode resolves immediately, matching
+    // how existing tooltips are stored. Publishing needs publish_posts, which
+    // admin/teacher accounts have; a lower-capability saver would have WP store
+    // this as pending and the shortcode would return empty until published.
+    $post_id = wp_insert_post(
+        array(
+            'post_type'    => 'tbt_tooltip',
+            'post_title'   => $title,
+            'post_content' => $content,
+            'post_status'  => 'publish',
+        ),
+        true
+    );
+
+    if ( is_wp_error( $post_id ) ) {
+        wp_send_json_error( array( 'message' => $post_id->get_error_message() ), 500 );
+    }
+
+    wp_send_json_success(
+        array(
+            'id'        => $post_id,
+            'shortcode' => '[tbt_tooltip id="' . $post_id . '"]',
+            'editUrl'   => get_edit_post_link( $post_id, 'raw' ),
+        )
+    );
 }
