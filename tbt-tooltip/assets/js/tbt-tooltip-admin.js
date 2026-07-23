@@ -24,6 +24,14 @@
         var copyStatus = document.getElementById('tbt-tt-copy-status');
         var live = document.getElementById('tbt-tt-live');
 
+        var titleInput   = document.getElementById('tbt-tt-title');
+        var saveBtn      = document.getElementById('tbt-tt-save');
+        var saveStatus   = document.getElementById('tbt-tt-save-status');
+        var saveResult   = document.getElementById('tbt-tt-save-result');
+        var shortcodeEl  = document.getElementById('tbt-tt-shortcode');
+        var shortcodeCpy = document.getElementById('tbt-tt-shortcode-copy');
+        var editLink     = document.getElementById('tbt-tt-edit-link');
+
         if (!input || !preview || !list) {
             return;
         }
@@ -47,6 +55,12 @@
             live.innerHTML = '';
             copyBtn.disabled = true;
             copyStatus.textContent = '';
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                titleInput.disabled = true;
+                saveStatus.textContent = '';
+                saveResult.style.display = 'none';
+            }
         }
 
         /* ---------------------------------------------------------------
@@ -267,6 +281,8 @@
             live.innerHTML = output.value;
             copyBtn.disabled = false;
             copyStatus.textContent = '';
+            titleInput.disabled = false;
+            saveBtn.disabled = false;
         });
 
         copyBtn.addEventListener('click', function () {
@@ -288,6 +304,76 @@
                 output.select();
                 document.execCommand('copy');
             }
+        });
+
+        /* ---------------------------------------------------------------
+         * Step 4 (continued) — save the generated markup as a tbt_tooltip
+         * post and hand back its shortcode.
+         * ------------------------------------------------------------- */
+        saveBtn.addEventListener('click', function () {
+            var title = titleInput.value.trim();
+            if (!title) {
+                window.alert('Please enter a name for the tooltip.');
+                titleInput.focus();
+                return;
+            }
+            if (!output.value.trim()) {
+                window.alert('Generate the HTML first.');
+                return;
+            }
+
+            saveBtn.disabled = true;
+            saveStatus.textContent = 'Saving…';
+
+            var body = new URLSearchParams();
+            body.append('action', 'tbt_tooltip_save');
+            body.append('nonce', tbtTooltipSave.nonce);
+            body.append('title', title);
+            body.append('content', output.value);
+
+            fetch(tbtTooltipSave.ajaxUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString()
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+                if (res && res.success) {
+                    shortcodeEl.value = res.data.shortcode;
+                    if (res.data.editUrl) {
+                        editLink.href = res.data.editUrl;
+                        editLink.style.display = '';
+                    } else {
+                        editLink.style.display = 'none';
+                    }
+                    saveResult.style.display = '';
+                    saveStatus.textContent = 'Saved!';
+                    window.setTimeout(function () { saveStatus.textContent = ''; }, 2500);
+                } else {
+                    var msg = (res && res.data && res.data.message) ? res.data.message : 'Save failed.';
+                    saveStatus.textContent = '';
+                    window.alert(msg);
+                    saveBtn.disabled = false;
+                }
+            })
+            .catch(function () {
+                saveStatus.textContent = '';
+                window.alert('Save failed (network error).');
+                saveBtn.disabled = false;
+            });
+        });
+
+        shortcodeCpy.addEventListener('click', function () {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(shortcodeEl.value);
+            } else {
+                shortcodeEl.focus();
+                shortcodeEl.select();
+                document.execCommand('copy');
+            }
+            saveStatus.textContent = 'Shortcode copied!';
+            window.setTimeout(function () { saveStatus.textContent = ''; }, 2500);
         });
     });
 })();
