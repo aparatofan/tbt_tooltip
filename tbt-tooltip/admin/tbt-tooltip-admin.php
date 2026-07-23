@@ -51,6 +51,34 @@ function tbt_tooltip_register_admin_page() {
 add_action( 'admin_menu', 'tbt_tooltip_register_admin_page' );
 
 /**
+ * Send the Tooltips "Add New" screen to the generator.
+ *
+ * The generator (TBT → TBT Tooltip) is now the create-and-save front door, so
+ * the post type's native blank editor for *new* tooltips would be a dead end
+ * (no fragment UI). Editing an existing tooltip still opens the classic editor
+ * as normal — this only intercepts post-new.php for our post type.
+ */
+function tbt_tooltip_redirect_add_new() {
+    global $pagenow;
+
+    if ( 'post-new.php' !== $pagenow ) {
+        return;
+    }
+
+    $post_type = isset( $_GET['post_type'] ) ? sanitize_key( wp_unslash( $_GET['post_type'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only routing decision, no state change.
+    if ( 'tbt_tooltip' !== $post_type ) {
+        return;
+    }
+
+    $url = menu_page_url( 'tbt-tooltip', false );
+    if ( $url ) {
+        wp_safe_redirect( $url );
+        exit;
+    }
+}
+add_action( 'admin_init', 'tbt_tooltip_redirect_add_new' );
+
+/**
  * Enqueue the generator assets, plus the frontend CSS/JS so the live
  * preview on the page behaves exactly like a published lesson.
  *
