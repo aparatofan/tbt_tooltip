@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TBT Tooltip
  * Description: Inline definition tooltips for The Blue Tree English lessons. Includes an admin generator (TBT → TBT Tooltip) that turns pasted lesson text into ready-to-use tooltip HTML for a Code block.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: Mariusz Mirecki
  * Text Domain: tbt-tooltip
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'TBT_TOOLTIP_VERSION', '1.0.1' );
+define( 'TBT_TOOLTIP_VERSION', '1.0.2' );
 define( 'TBT_TOOLTIP_URL', plugin_dir_url( __FILE__ ) );
 define( 'TBT_TOOLTIP_PATH', plugin_dir_path( __FILE__ ) );
 
